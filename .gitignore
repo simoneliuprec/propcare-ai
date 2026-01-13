@@ -2,8 +2,11 @@
 .DS_Store
 .vscode/
 .idea/
+.env
 
 # --- Backend (Python) ---
+__pycache__/
+*.pyc
 backend/venv/
 backend/__pycache__/
 backend/*.pyc
@@ -19,3 +22,5 @@ frontend/build/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+.ipynb_checkpoints/
