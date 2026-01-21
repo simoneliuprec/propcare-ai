@@ -10,17 +10,27 @@ from .orchestrator import run_triage_turn
 
 app = FastAPI(title="PropCare AI API")
 
+import os
+
+ALLOWED_ORIGINS = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:3000"
+).split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[origin.strip() for origin in ALLOWED_ORIGINS],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-print("=== PropCare API booted: main.py loaded ===", flush=True)
 
 llm_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest):
@@ -32,7 +42,14 @@ async def chat_endpoint(request: ChatRequest):
                 raise HTTPException(status_code=400, detail="Provide 'messages' or 'message'.")
             msgs = (request.history or []) + [Message(role="user", content=request.message)]
 
-        state = TriageState(messages=msgs)
+        state = TriageState(
+            messages=msgs,
+            tenant_name=request.tenant_name,
+            tenant_email=request.tenant_email,
+            tenant_phone=request.tenant_phone,
+            property_address=request.property_address,
+            unit=request.unit,
+        )
         state = await run_triage_turn(llm_client, supabase, state)
 
         # Return latest assistant message as reply

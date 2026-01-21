@@ -12,6 +12,11 @@ class ChatRequest(BaseModel):
     messages: Optional[List[Message]] = None
     message: Optional[str] = None
     history: Optional[List[Message]] = None
+    tenant_name: Optional[str] = None
+    tenant_email: Optional[str] = None
+    tenant_phone: Optional[str] = None
+    property_address: Optional[str] = None
+    unit: Optional[str] = None
 
 class ChatResponse(BaseModel):
     reply: str
@@ -24,3 +29,8 @@ class TriageState(BaseModel):
     ticket_id: Optional[int] = None
     escalation_reason: Optional[str] = None
     escalation_urgency: Optional[str] = None
+    tenant_name: Optional[str] = None
+    tenant_email: Optional[str] = None
+    tenant_phone: Optional[str] = None
+    property_address: Optional[str] = None
+    unit: Optional[str] = None

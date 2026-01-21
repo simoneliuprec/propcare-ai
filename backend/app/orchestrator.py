@@ -5,7 +5,8 @@ from supabase import Client
 
 from .schemas import Message, TriageState
 from .policy import should_escalate
-from .tools import create_ticket
+from .tools import create_ticket_record
+from .notifications import enqueue_ticket_created
 from .llm import chat_turn, force_create_ticket, extract_tool_call_create_ticket
 
 def _to_openai_messages(msgs: List[Message], keep_last: int = 12) -> List[Dict[str, str]]:
@@ -19,7 +20,22 @@ async def run_triage_turn(llm_client: AsyncOpenAI, supabase: Client, state: Tria
     needs_ticket, urgency, reason = should_escalate(msgs)
     if needs_ticket:
         summary = f"{reason} | Tenant report: {msgs[-1].content}"
-        ticket_id = create_ticket(supabase, summary=summary, urgency=urgency)
+        ticket = create_ticket_record(
+            supabase,
+            summary=summary,
+            urgency=urgency,
+            tenant_name=state.tenant_name,
+            tenant_email=state.tenant_email,
+            tenant_phone=state.tenant_phone,
+            property_address=state.property_address,
+            unit=state.unit,
+        )
+        ticket_id = int(ticket["id"])
+        print("DEBUG: created ticket_id", ticket_id)
+
+        enqueue_ticket_created(supabase, ticket)
+        print("DEBUG: enqueued outbox for", ticket_id)
+
 
         state.ticket_created = True
         state.ticket_id = ticket_id
@@ -43,7 +59,22 @@ async def run_triage_turn(llm_client: AsyncOpenAI, supabase: Client, state: Tria
         final_urgency = tool_urgency or "Medium"
         final_summary = summary.strip() or f"Tenant report: {msgs[-1].content}"
 
-        ticket_id = create_ticket(supabase, summary=final_summary, urgency=final_urgency)
+        ticket = create_ticket_record(
+            supabase,
+            summary=summary,
+            urgency=urgency,
+            tenant_name=state.tenant_name,
+            tenant_email=state.tenant_email,
+            tenant_phone=state.tenant_phone,
+            property_address=state.property_address,
+            unit=state.unit,
+        )
+        ticket_id = int(ticket["id"])
+        print("DEBUG: created ticket_id", ticket_id)
+
+        enqueue_ticket_created(supabase, ticket)
+        print("DEBUG: enqueued outbox for", ticket_id)
+
         state.ticket_created = True
         state.ticket_id = ticket_id
 
