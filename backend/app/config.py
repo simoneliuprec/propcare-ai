@@ -14,6 +14,13 @@ RESEND_API_KEY = os.getenv("RESEND_API_KEY")  # required only for the email work
 NOTIFICATION_EMAIL = os.getenv("NOTIFICATION_EMAIL")  # where ops notifications go
 REPLY_TO_EMAIL = os.getenv("REPLY_TO_EMAIL", "info@simoneliu.com")
 
+MEDIA_BUCKET = os.getenv("MEDIA_BUCKET", "ticket-media")
+MEDIA_SIGNED_URL_TTL_SECONDS = int(
+    os.getenv("MEDIA_SIGNED_URL_TTL_SECONDS", "3600")
+)
+IMAGE_VERIFICATION_MODEL = "gpt-4o-mini"
+IMAGE_VERIFIER_ID = f"openai:{IMAGE_VERIFICATION_MODEL}"
+
 if not OPENAI_API_KEY:
     raise RuntimeError("OPENAI_API_KEY is missing.")
 if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:

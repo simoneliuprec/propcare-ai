@@ -7,6 +7,7 @@ from supabase import create_client, Client
 from .config import OPENAI_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 from .schemas import ChatRequest, ChatResponse, Message, TriageState
 from .orchestrator import run_triage_turn
+from .media import router as media_router
 
 app = FastAPI(title="PropCare AI API")
 
@@ -27,6 +28,16 @@ app.add_middleware(
 
 llm_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+# Inject shared clients for routers/endpoints
+@app.middleware("http")
+async def inject_clients(request: ChatRequest, call_next):
+    request.state.supabase = supabase
+    request.state.llm_client = llm_client
+    return await call_next(request)
+
+# Mount media routes (e.g., /upload_media)
+app.include_router(media_router)
 
 @app.get("/health")
 def health():
