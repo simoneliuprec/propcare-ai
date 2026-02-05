@@ -71,6 +71,8 @@ APPLIANCE MEDIA REQUIREMENT (INTERNAL RULE):
 ALLOWED_CATEGORIES = ["plumbing", "electrical", "hvac", "appliance", "other"]
 ALLOWED_URGENCY = ["P0", "P1", "P2", "P3"]
 ALLOWED_STATUS = ["intake", "action_required", "resolved"]
+ALLOWED_NEXT_ACTION = ["ask", "troubleshoot", "summarize", "await_media"]
+ALLOWED_REQUIRED_MEDIA = ["none", "photo", "video"]
 
 TRIAGE_OUTPUT_SCHEMA: Dict[str, Any] = {
     "name": "triage_turn",
@@ -84,6 +86,10 @@ TRIAGE_OUTPUT_SCHEMA: Dict[str, Any] = {
             "status": {"type": "string", "enum": ALLOWED_STATUS},
             "should_notify_manager": {"type": "boolean"},
             "summary_for_ticket": {"type": "string"},
+
+            # NEW: must be present in required; allow null when unknown
+            "next_action": {"anyOf": [{"type": "string", "enum": ALLOWED_NEXT_ACTION}, {"type": "null"}]},
+            "required_media": {"anyOf": [{"type": "string", "enum": ALLOWED_REQUIRED_MEDIA}, {"type": "null"}]},
         },
         "required": [
             "tenant_reply",
@@ -92,9 +98,12 @@ TRIAGE_OUTPUT_SCHEMA: Dict[str, Any] = {
             "status",
             "should_notify_manager",
             "summary_for_ticket",
+            "next_action",
+            "required_media",
         ],
     },
 }
+
 
 def tool_schema_create_ticket() -> List[Dict[str, Any]]:
     return [
@@ -148,7 +157,7 @@ async def chat_turn_json(
         instructions = instructions + "\n\n" + extra_instructions.strip()
 
     schema = enforce_no_additional_properties(
-        TriageTurn.model_json_schema()
+        TRIAGE_OUTPUT_SCHEMA["schema"]
     )
 
     resp = await client.responses.create(
@@ -159,7 +168,7 @@ async def chat_turn_json(
         text={
             "format": {
                 "type": "json_schema",
-                "name": "triage_turn",
+                "name": TRIAGE_OUTPUT_SCHEMA["name"],
                 "strict": True,
                 "schema": schema,
             }
